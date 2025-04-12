@@ -3,6 +3,7 @@ Embeds AEM fragments into a page.
 
 ## Local installation
 
+1. Clone this repository to your disk: `git clone https://github.com/rofe/embed-simulator.git`
 1. Open Chrome and navigate to the _Extensions_ page at `chrome://extensions`
 1. Turn on _Developer mode_ at the top right of the header bar<br />
    <img width="170" alt="Enable developer mode" src="https://github.com/user-attachments/assets/417699bd-96ec-45fe-9b57-40d2d2831ad2" />
