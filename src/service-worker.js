@@ -1,34 +1,32 @@
 // Service Worker for the Embed Simulator extension
 
+async function doApplyEmbeds(tabId, embeds) {
+  console.log('Applying embeds to tab:', tabId);
+  try {
+    await chrome.tabs.sendMessage(tabId, {
+      action: 'applyEmbeds',
+      embeds,
+    });
+  } catch (error) {
+    console.info('Error applying embeds:', error);
+  }
+}
+
 function applyEmbeds(tabId, delay) {
   // Get the current embeds configuration
-  chrome.storage.local.get({ embeds: [] }, function (result) {
-    function doApplyEmbeds() {
-      console.log('Applying embeds to tab:', tabId);
-      try {
-        chrome.tabs.sendMessage(tabId, {
-          action: 'applyEmbeds',
-          embeds: result.embeds
-        });
-      } catch (error) {
-        console.log('Error applying embeds:', error);
-      }
+  chrome.storage.local.get({ embeds: [] }, (resp) => {
+    if (!resp.embeds || (Array.isArray(resp.embeds) && resp.embeds.length === 0)) {
+      return;
     }
-    if (result.embeds.length > 0) {
-      if (delay) {
-        console.log('Waiting 500ms before applying embeds');
-        setTimeout(doApplyEmbeds, 500);
-      } else {
-        doApplyEmbeds();
-      }
+    if (delay) {
+      console.log('Waiting 500ms before applying embeds');
+      setTimeout(() => doApplyEmbeds(tabId, resp.embeds), 500);
+    } else {
+      doApplyEmbeds(tabId, resp.embeds);
     }
   });
 
 }
-// Listen for installation
-chrome.runtime.onInstalled.addListener(() => {
-  console.log('Embed Simulator extension installed');
-});
 
 // Store the last selected element data
 let lastSelector = null;
@@ -42,9 +40,12 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 });
 
 // Listen for tab activation
-chrome.tabs.onActivated.addListener(function(activeInfo) {
-  console.log('Tab activated:', activeInfo.tabId);
-  applyEmbeds(activeInfo.tabId);
+chrome.tabs.onActivated.addListener(async function ({ tabId }) {
+  const tab = await chrome.tabs.get(tabId);
+  if (tab.url) {
+    console.log('Tab activated:', tab.url);
+    applyEmbeds(tabId);
+  }
 });
 
 // Listen for storage changes
@@ -57,11 +58,7 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
     // Get the current active tab
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       if (tabs[0]) {
-        console.log('Sending applyEmbeds message to tab:', tabs[0].id);
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'applyEmbeds',
-          embeds: changes.embeds.newValue
-        });
+        doApplyEmbeds(tabs[0].id, changes.embeds.newValue);
       }
     });
   }

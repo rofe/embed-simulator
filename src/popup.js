@@ -11,17 +11,13 @@ let currentTabUrl = null;
 
 // Initialize the popup
 function initializePopup() {
-  console.log('Initializing popup...');
-
   // Get current tab URL
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     currentTabUrl = tabs[0].url;
-    console.log('Current tab URL:', currentTabUrl);
 
     // Check if we have a selected element from the service worker
     chrome.runtime.sendMessage({action: 'getSelectedElement'}, function(response) {
       if (response) {
-        console.log('Retrieved selected element from service worker:', response);
         selector = response.selector;
         currentState = selector ? UI_STATE.CONFIGURE : UI_STATE.INITIAL;
       }
@@ -33,13 +29,11 @@ function initializePopup() {
 
 // Update UI based on current state
 function updateUI() {
-  console.log('Updating UI, current state:', currentState);
   const embedControls = document.getElementById('embedControls');
   embedControls.innerHTML = '';
 
   switch (currentState) {
     case UI_STATE.CONFIGURE:
-      console.log('Rendering CONFIGURE state');
       embedControls.innerHTML = `
         <h2>Add Embed</h2>
         <div class="form-group">
@@ -68,13 +62,10 @@ function updateUI() {
         console.log('Embed URL input changed:', embedUrlInput.value);
         confirmButton.disabled = !embedUrlInput.value.trim();
       });
+      embedUrlInput.focus();
 
       confirmButton.addEventListener('click', saveEmbed);
       cancelButton.addEventListener('click', resetToInitialState);
-
-      // Focus the input field
-      console.log('Focusing embed URL input field');
-      embedUrlInput.focus();
       break;
 
     case UI_STATE.PICKER:
@@ -90,7 +81,6 @@ function updateUI() {
       break;
 
     default:
-      console.log('Rendering INITIAL state');
       // Get existing embeds for current URL
       chrome.storage.local.get({ embeds: [] }, function (result) {
         const currentEmbeds = result.embeds.filter(embed => embed.tabUrl === currentTabUrl);
@@ -126,7 +116,7 @@ function updateUI() {
         document.querySelectorAll('.embed-card-delete').forEach(button => {
           button.addEventListener('click', function () {
             const index = parseInt(this.dataset.index);
-            deleteEmbed(index);
+            removeEmbed(index);
           });
         });
 
@@ -136,9 +126,7 @@ function updateUI() {
 }
 
 // Delete an embed
-function deleteEmbed(index) {
-  console.log('Deleting embed at index:', index);
-
+function removeEmbed(index) {
   chrome.storage.local.get({embeds: []}, function(result) {
     const embeds = result.embeds;
     const currentEmbeds = embeds.filter(embed => embed.tabUrl === currentTabUrl);
@@ -174,14 +162,12 @@ function deleteEmbed(index) {
 
 // Start picker mode
 function startPickerMode() {
-  console.log('Starting picker mode...');
   currentState = UI_STATE.PICKER;
   updateUI();
 }
 
 // Reset to initial state
 function resetToInitialState() {
-  console.log('Resetting to initial state');
   currentState = UI_STATE.INITIAL;
   selector = null;
 

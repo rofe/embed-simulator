@@ -50,8 +50,9 @@ function updateOverlay(element, isSelected = false) {
   if (element.classList.length > 0) {
     tag = `${tag}.${[...element.classList].join('.')}`;
   }
-  highlightOverlay.firstElementChild.textContent = tag;
-  highlightOverlay.firstElementChild.style.backgroundColor = isSelected ? '#2d9d78' : '#2680eb';
+  const tagElem = highlightOverlay.firstElementChild;
+  tagElem.textContent = tag;
+  tagElem.style.backgroundColor = isSelected ? '#2d9d78' : '#2680eb';
 }
 
 // Remove overlay
@@ -62,33 +63,7 @@ function removeOverlay() {
   }
 }
 
-// Listen for messages from popup or service worker
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  switch (request.action) {
-    case 'startPickerMode':
-      startPickerMode();
-      break;
-    case 'stopPickerMode':
-      stopPickerMode();
-      break;
-    case 'applyEmbeds':
-      console.log('Applying embeds:', request.embeds);
-      applyEmbeds(request.embeds);
-      break;
-    case 'removeEmbed':
-      console.log('Removing embed with ID:', request.embedId);
-      const iframe = document.getElementById(`aem-embed-${request.embedId}`);
-      if (iframe) {
-        iframe.remove();
-      } else {
-        console.log('No iframe found with ID:', `aem-embed-${request.embedId}`);
-      }
-      break;
-  }
-});
-
 function startPickerMode() {
-  console.log('Enter picker mode');
   isPickerMode = true;
   document.body.style.cursor = 'crosshair';
   document.addEventListener('mousemove', handleMouseMove);
@@ -96,7 +71,6 @@ function startPickerMode() {
 }
 
 function stopPickerMode() {
-  console.log('Exit picker mode');
   isPickerMode = false;
   document.body.style.cursor = '';
   document.removeEventListener('mousemove', handleMouseMove);
@@ -116,37 +90,6 @@ function handleMouseMove(e) {
   updateOverlay(element);
 }
 
-function handleClick(e) {
-  console.log('handleClick', highlightedElement);
-  if (!isPickerMode) return;
-
-  e.preventDefault();
-  e.stopPropagation();
-
-  if (highlightedElement) {
-    console.log('Element clicked:', highlightedElement);
-    selectedElement = highlightedElement;
-    updateOverlay(selectedElement, true);
-
-    // Generate selector for the element
-    const selector = generateSelector(selectedElement);
-    console.log('Generated selector:', selector);
-
-    // Send message to popup
-    console.log('Sending elementSelected message to service worker');
-    chrome.runtime.sendMessage({
-      action: 'elementSelected',
-      selector: selector,
-    });
-
-    // Don't reset picker mode here - let the popup handle it
-    isPickerMode = false;
-    document.body.style.cursor = '';
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('click', handleClick);
-  }
-}
-
 function generateSelector(elem) {
   console.log('generateSelector', elem);
   const {
@@ -158,8 +101,9 @@ function generateSelector(elem) {
 
   let str = tagName.toLowerCase();
 
-  if (str === 'html') return str;
-
+  if (str === 'html') {
+    return str;
+  }
 
   str += (id !== '') ? `#${id}` : '';
 
@@ -181,13 +125,35 @@ function generateSelector(elem) {
   return `${generateSelector(parentElement)} > ${str}`;
 }
 
+function handleClick(e) {
+  if (!isPickerMode) return;
+
+  e.preventDefault();
+  e.stopPropagation();
+
+  if (highlightedElement) {
+    selectedElement = highlightedElement;
+    updateOverlay(selectedElement, true);
+
+    // Send message to popup
+    chrome.runtime.sendMessage({
+      action: 'elementSelected',
+      selector: generateSelector(selectedElement),
+    });
+
+    // Don't reset picker mode here - let the popup handle it
+    isPickerMode = false;
+    document.body.style.cursor = '';
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('click', handleClick);
+  }
+}
+
 function applyEmbeds(embeds) {
   const currentUrl = window.location.href;
 
   embeds.forEach(embed => {
-    console.log('Processing embed:', embed);
     if (embed.tabUrl === currentUrl && !document.getElementById(`embed-${embed.id}`)) {
-      console.log('URL match found, looking for element with selector:', embed.selector);
       const element = document.querySelector(embed.selector);
       if (element) {
         // Create embed iframe
@@ -200,11 +166,37 @@ function applyEmbeds(embeds) {
         iframe.style.border = 'none';
 
         // insert iframe before selected element
-        console.log('Insert iframe before', element, 'with URL', embed.url);
         element.parentNode.insertBefore(iframe, element);
       } else {
-        console.log('No element found for selector:', embed.selector);
+        console.log('applyEmbeds: no element found for selector:', embed.selector);
       }
     }
   });
 }
+
+function removeEmbed(embedId) {
+  const iframe = document.getElementById(`aem-embed-${embedId}`);
+  if (iframe) {
+    iframe.remove();
+  } else {
+    console.log('deleteEmbed: no iframe found with ID:', `aem-embed-${embedId}`);
+  }
+}
+
+// Listen for messages from popup or service worker
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  switch (request.action) {
+    case 'startPickerMode':
+      startPickerMode();
+      break;
+    case 'stopPickerMode':
+      stopPickerMode();
+      break;
+    case 'applyEmbeds':
+      applyEmbeds(request.embeds);
+      break;
+    case 'removeEmbed':
+      removeEmbed(request.embedId);
+      break;
+  }
+});
