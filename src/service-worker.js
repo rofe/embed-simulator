@@ -5,10 +5,14 @@ function applyEmbeds(tabId, delay) {
   chrome.storage.local.get({ embeds: [] }, function (result) {
     function doApplyEmbeds() {
       console.log('Applying embeds to tab:', tabId);
-      chrome.tabs.sendMessage(tabId, {
-        action: 'applyEmbeds',
-        embeds: result.embeds
-      });
+      try {
+        chrome.tabs.sendMessage(tabId, {
+          action: 'applyEmbeds',
+          embeds: result.embeds
+        });
+      } catch (error) {
+        console.log('Error applying embeds:', error);
+      }
     }
     if (result.embeds.length > 0) {
       if (delay) {
