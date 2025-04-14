@@ -1,11 +1,13 @@
-let isPickerMode = false;
-let highlightedElement = null;
-let selectedElement = null;
-let highlightOverlay = null;
+// Temporary storage for embed handling
+window.aemEmbeds = window.aemEmbeds || {
+  isPickerMode: false,
+  appliedEmbeds: [],
+};
 
 // Create overlay div
 function createOverlay() {
   const overlay = document.createElement('div');
+  overlay.id = 'aem-highlight-overlay';
   overlay.style.position = 'absolute';
   overlay.style.pointerEvents = 'none';
   overlay.style.zIndex = '9999';
@@ -32,6 +34,7 @@ function createOverlay() {
 
 // Update overlay position and size
 function updateOverlay(element, isSelected = false) {
+  let highlightOverlay = document.getElementById('aem-highlight-overlay');
   if (!highlightOverlay) {
     highlightOverlay = createOverlay();
   }
@@ -57,41 +60,41 @@ function updateOverlay(element, isSelected = false) {
 
 // Remove overlay
 function removeOverlay() {
+  const highlightOverlay = document.getElementById('aem-highlight-overlay');
   if (highlightOverlay) {
     highlightOverlay.remove();
-    highlightOverlay = null;
   }
 }
 
 function startPickerMode() {
-  isPickerMode = true;
+  window.aemEmbeds.isPickerMode = true;
   document.body.style.cursor = 'crosshair';
   document.addEventListener('mousemove', handleMouseMove);
   document.addEventListener('click', handleClick);
 }
 
 function stopPickerMode() {
-  isPickerMode = false;
+  window.aemEmbeds.isPickerMode = false;
   document.body.style.cursor = '';
   document.removeEventListener('mousemove', handleMouseMove);
   document.removeEventListener('click', handleClick);
   removeOverlay();
-  highlightedElement = null;
-  selectedElement = null;
+  delete window.aemEmbeds.highlightedElementSelector;
+  delete window.aemEmbeds.selectedElementSelector;
 }
 
 function handleMouseMove(e) {
-  if (!isPickerMode) return;
+  if (!window.aemEmbeds.isPickerMode) return;
 
   const element = document.elementFromPoint(e.clientX, e.clientY);
+  const highlightedElement = document.querySelector(window.aemEmbeds.highlightedElementSelector);
   if (!element || element === highlightedElement) return;
 
-  highlightedElement = element;
+  window.aemEmbeds.highlightedElementSelector = generateSelector(element);
   updateOverlay(element);
 }
 
 function generateSelector(elem) {
-  console.log('generateSelector', elem);
   const {
     tagName,
     id,
@@ -126,52 +129,103 @@ function generateSelector(elem) {
 }
 
 function handleClick(e) {
-  if (!isPickerMode) return;
+  if (!window.aemEmbeds.isPickerMode) return;
 
   e.preventDefault();
   e.stopPropagation();
 
+  const highlightedElement = document.querySelector(window.aemEmbeds.highlightedElementSelector);
   if (highlightedElement) {
-    selectedElement = highlightedElement;
-    updateOverlay(selectedElement, true);
+    window.aemEmbeds.selectedElementSelector = generateSelector(highlightedElement);
+    updateOverlay(highlightedElement, true);
 
     // Send message to popup
     chrome.runtime.sendMessage({
       action: 'elementSelected',
-      selector: generateSelector(selectedElement),
+      selector: generateSelector(highlightedElement),
     });
 
     // Don't reset picker mode here - let the popup handle it
-    isPickerMode = false;
+    window.aemEmbeds.isPickerMode = false;
     document.body.style.cursor = '';
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('click', handleClick);
   }
 }
 
+// Helper function to create an embed
+function createEmbed(element, { id, embedUrl }) {
+  const embedHTML = `
+    <style>
+      #aem-embed-${id} {
+        width: 100%;
+        max-width: 1200px;
+        min-height: 280px;
+        border: none;
+      }
+      @media (min-width: 900px) {
+        #aem-embed-${id} {
+          min-height: 166px;
+        }
+      }
+    </style>
+    <iframe 
+      id="aem-embed-${id}"
+      src="${embedUrl}"
+    ></iframe>
+  `;
+
+  // Insert embed HTML before the element
+  // console.log('Inserting embed before element');
+  element.insertAdjacentHTML('beforebegin', embedHTML);
+  // Remember applied embeds
+  window.aemEmbeds.appliedEmbeds.push(id);
+}
+
 function applyEmbeds(embeds) {
   const currentUrl = window.location.href;
+  window.aemEmbeds.delayedEmbeds = [];
 
-  embeds.forEach(embed => {
-    if (embed.tabUrl === currentUrl && !document.getElementById(`embed-${embed.id}`)) {
+  // Process embeds
+  embeds
+    .filter(embed => !window.aemEmbeds.appliedEmbeds.includes(embed.id)) // Only apply new embeds
+    .filter(embed => embed.tabUrl === currentUrl)
+    .forEach(embed => {
       const element = document.querySelector(embed.selector);
       if (element) {
-        // Create embed iframe
-        const iframe = document.createElement('iframe');
-        iframe.id = `aem-embed-${embed.id}`;
-        iframe.src = embed.embedUrl;
-        iframe.dataset.embedName = embed.embedName;
-        iframe.style.width = embed.width || '100%';
-        iframe.style.height = embed.height || '110px';
-        iframe.style.border = 'none';
-
-        // insert iframe before selected element
-        element.parentNode.insertBefore(iframe, element);
+        createEmbed(element, embed);
       } else {
-        console.log('applyEmbeds: no element found for selector:', embed.selector);
+        window.aemEmbeds.delayedEmbeds.push(embed);
       }
-    }
-  });
+    });
+
+  // If we have delayed embeds, start observing DOM changes
+  if (window.aemEmbeds.delayedEmbeds.length > 0) {
+    const observer = new MutationObserver(function (mutations) {
+      mutations.forEach(function (mutation) {
+        if (mutation.addedNodes.length) {
+          // Check if any delayed embeds can now be applied
+          [...window.aemEmbeds.delayedEmbeds].forEach((embed, index) => {
+            const element = document.querySelector(embed.selector);
+            if (element) {
+              createEmbed(element, embed);
+              window.aemEmbeds.delayedEmbeds.splice(window.aemEmbeds.delayedEmbeds.length - 1 - index, 1);
+            }
+          });
+
+          // If no more delayed embeds, disconnect the observer
+          if (window.aemEmbeds.delayedEmbeds.length === 0) {
+            observer.disconnect();
+          }
+        }
+      });
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
 }
 
 function removeEmbed(embedId) {

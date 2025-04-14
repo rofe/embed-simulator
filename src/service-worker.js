@@ -1,31 +1,26 @@
 // Service Worker for the Embed Simulator extension
 
-async function doApplyEmbeds(tabId, embeds) {
-  console.log('Applying embeds to tab:', tabId);
-  try {
-    await chrome.tabs.sendMessage(tabId, {
-      action: 'applyEmbeds',
-      embeds,
-    });
-  } catch (error) {
-    console.info('Error applying embeds:', error);
-  }
-}
-
-function applyEmbeds(tabId, delay) {
-  // Get the current embeds configuration
-  chrome.storage.local.get({ embeds: [] }, (resp) => {
-    if (!resp.embeds || (Array.isArray(resp.embeds) && resp.embeds.length === 0)) {
+function applyEmbeds(tabId) {
+  // Get the current embeds configuration and send it to the tab
+  chrome.storage.local.get({ embeds: [] }, async ({ embeds }) => {
+    if (!embeds || (Array.isArray(embeds) && embeds.length === 0)) {
       return;
     }
-    if (delay) {
-      console.log('Waiting 500ms before applying embeds');
-      setTimeout(() => doApplyEmbeds(tabId, resp.embeds), 500);
-    } else {
-      doApplyEmbeds(tabId, resp.embeds);
+    try {
+      // execute content script
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['./content.js'],
+      });
+      // send message to content script
+      await chrome.tabs.sendMessage(tabId, {
+        action: 'applyEmbeds',
+        embeds,
+      });
+    } catch (error) {
+      console.info('Error applying embeds:', error);
     }
   });
-
 }
 
 // Store the last selected element data
@@ -55,10 +50,10 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
   if (namespace === 'local' && changes.embeds) {
     console.log('Embeds configuration changed, applying to current tab');
 
-    // Get the current active tab
+    // Get the current active tab and send the embeds to it
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      if (tabs[0]) {
-        doApplyEmbeds(tabs[0].id, changes.embeds.newValue);
+      if (tabs[0] && tabs[0].id) {
+        applyEmbeds(tabs[0].id);
       }
     });
   }
