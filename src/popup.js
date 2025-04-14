@@ -46,7 +46,7 @@ function updateUI() {
           <label for="embedHeight">Width</label>
           <input type="text" id="embedWidth" class="spectrum-Textfield" placeholder="100%">
           <label for="embedHeight">Height</label>
-          <input type="text" id="embedHeight" class="spectrum-Textfield" placeholder="110px">
+          <input type="text" id="embedHeight" class="spectrum-Textfield" placeholder="166px">
         </div>
         <div class="form-button-group">
           <button id="confirmEmbed" class="spectrum-Button spectrum-Button--primary" disabled>Confirm</button>
