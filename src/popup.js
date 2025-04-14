@@ -12,8 +12,13 @@ let currentTabUrl = null;
 // Initialize the popup
 function initializePopup() {
   // Get current tab URL
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  chrome.tabs.query({active: true, currentWindow: true}, async function(tabs) {
     currentTabUrl = tabs[0].url;
+    // execute content script
+    await chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      files: ['./place-embeds.js'],
+    });
 
     // Check if we have a selected element from the service worker
     chrome.runtime.sendMessage({action: 'getSelectedElement'}, function(response) {
@@ -28,7 +33,7 @@ function initializePopup() {
 }
 
 // Update UI based on current state
-function updateUI() {
+async function updateUI() {
   const embedControls = document.getElementById('embedControls');
   embedControls.innerHTML = '';
 
