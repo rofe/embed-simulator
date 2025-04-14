@@ -38,15 +38,19 @@ function updateUI() {
         <h2>Add Embed</h2>
         <div class="form-group">
           <label for="embedUrl" class="required">Embed URL</label>
-          <input type="text" id="embedUrl" class="spectrum-Textfield" required>
+          <input type="url" id="embedUrl" class="spectrum-Textfield" required>
+        </div>
+        <div class="form-group-collapsible">
+          <label for="targetUrl">Target URL (Pattern)</label>
+          <input type="text" id="tabUrl" class="spectrum-Textfield" value="${currentTabUrl}">
         </div>
         <div class="form-group">
           <label for="embedName">Name</label>
           <input type="text" id="embedName" class="spectrum-Textfield" placeholder="Embed n">
           <label for="embedHeight">Width</label>
-          <input type="text" id="embedWidth" class="spectrum-Textfield" placeholder="100%">
+          <input type="text" id="embedWidth" class="spectrum-Textfield" placeholder="Automatic">
           <label for="embedHeight">Height</label>
-          <input type="text" id="embedHeight" class="spectrum-Textfield" placeholder="166px">
+          <input type="text" id="embedHeight" class="spectrum-Textfield" placeholder="Automatic">
         </div>
         <div class="form-button-group">
           <button id="confirmEmbed" class="spectrum-Button spectrum-Button--primary" disabled>Confirm</button>
@@ -190,46 +194,42 @@ function saveEmbed() {
     return;
   }
 
+  const tabUrl = document.getElementById('tabUrl').value.trim();
   const embedName = document.getElementById('embedName').value.trim();
   const embedWidth = document.getElementById('embedWidth').value.trim();
   const embedHeight = document.getElementById('embedHeight').value.trim();
-  // Get current tab URL
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    const tabUrl = tabs[0].url;
-    console.log('Current tab URL:', tabUrl);
 
-    // Save configuration
-    chrome.storage.local.get({embeds: []}, function(result) {
-      console.log('Current embeds:', result.embeds);
-      const embeds = result.embeds || [];
+  // Save configuration
+  chrome.storage.local.get({embeds: []}, function(result) {
+    console.log('Current embeds:', result.embeds);
+    const embeds = result.embeds || [];
 
-      // Find the next available ID
-      const nextId = embeds.length > 0
-        ? Math.max(...embeds.map(e => e.id || 0)) + 1
-        : 1;
+    // Find the next available ID
+    const nextId = embeds.length > 0
+      ? Math.max(...embeds.map(e => e.id || 0)) + 1
+      : 1;
 
-      const newEmbed = {
-        id: nextId,
-        tabUrl,
-        selector,
-        embedName: embedName || `Embed ${nextId}`,
-        embedWidth: embedWidth || '100%',
-        embedHeight: embedHeight || '110px',
-        embedUrl,
-      };
+    const newEmbed = {
+      id: nextId,
+      tabUrl,
+      selector,
+      embedName: embedName || `Embed ${nextId}`,
+      embedWidth: embedWidth || '100%',
+      embedHeight: embedHeight || '110px',
+      embedUrl,
+    };
 
-      embeds.push(newEmbed);
+    embeds.push(newEmbed);
 
-      chrome.storage.local.set({embeds}, function() {
-        console.log('Saved new embed configuration:', newEmbed);
-        // Remove highlight overlay before closing
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'stopPickerMode'
-        });
-        // Close the popup instead of resetting to initial state
-        console.log('Closing popup');
-        window.close();
+    chrome.storage.local.set({embeds}, function() {
+      console.log('Saved new embed configuration:', newEmbed);
+      // Remove highlight overlay before closing
+      chrome.tabs.sendMessage(tabs[0].id, {
+        action: 'stopPickerMode'
       });
+      // Close the popup instead of resetting to initial state
+      console.log('Closing popup');
+      window.close();
     });
   });
 }
