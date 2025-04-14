@@ -8,15 +8,18 @@ const UI_STATE = {
 let currentState = UI_STATE.INITIAL;
 let selector = null;
 let currentTabUrl = null;
+let currentTabId = null;
 
 // Initialize the popup
 function initializePopup() {
   // Get current tab URL
-  chrome.tabs.query({active: true, currentWindow: true}, async function(tabs) {
+  chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
     currentTabUrl = tabs[0].url;
+    currentTabId = tabs[0].id;
+
     // execute content script
     await chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
+      target: { tabId: currentTabId },
       files: ['./place-embeds.js'],
     });
 
@@ -55,7 +58,7 @@ async function updateUI() {
           <input type="url" id="embedUrl" class="spectrum-Textfield" required>
         </div>
         <div class="form-group-collapsible">
-          <label for="targetUrl">Target URL (Pattern)</label>
+          <label for="targetUrl">Target URL (<code>*</code> suffix supported)</label>
           <input type="text" id="tabUrl" class="spectrum-Textfield" value="${currentTabUrl}">
         </div>
         <div class="form-group">
@@ -82,20 +85,24 @@ async function updateUI() {
       });
       embedUrlInput.focus();
 
+      document.querySelectorAll('.form-group-collapsible').forEach((group) => {
+        group.addEventListener('click', () => {
+          group.classList.toggle('expanded');
+        });
+      });
+
       confirmButton.addEventListener('click', saveEmbed);
       cancelButton.addEventListener('click', resetToInitialState);
       break;
 
     case UI_STATE.PICKER:
       // Send message to content script to start picker mode
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        console.log('Sending startPickerMode message to tab:', tabs[0].id);
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'startPickerMode' });
+      console.log('Sending startPickerMode message to tab:', currentTabId);
+      chrome.tabs.sendMessage(currentTabId, { action: 'startPickerMode' });
 
-        // Close the popup window
-        console.log('Closing popup window to allow page interaction');
-        window.close();
-      });
+      // Close the popup window
+      console.log('Closing popup window to allow page interaction');
+      window.close();
       break;
 
     default:
@@ -162,11 +169,9 @@ function removeEmbed(index) {
         embeds.splice(fullIndex, 1);
 
         // Send message to content script to remove the iframe
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'removeEmbed',
-            embedId: embedToDelete.id
-          });
+        chrome.tabs.sendMessage(currentTabId, {
+          action: 'removeEmbed',
+          embedId: embedToDelete.id
         });
 
         chrome.storage.local.set({embeds}, function() {
@@ -190,10 +195,8 @@ function resetToInitialState() {
   selector = null;
 
   // Remove highlight overlay
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    chrome.tabs.sendMessage(tabs[0].id, {
-      action: 'stopPickerMode'
-    });
+  chrome.tabs.sendMessage(currentTabId, {
+    action: 'stopPickerMode'
   });
 
   updateUI();
@@ -238,7 +241,7 @@ function saveEmbed() {
     chrome.storage.local.set({embeds}, function() {
       console.log('Saved new embed configuration:', newEmbed);
       // Remove highlight overlay before closing
-      chrome.tabs.sendMessage(tabs[0].id, {
+      chrome.tabs.sendMessage(currentTabId, {
         action: 'stopPickerMode'
       });
       // Close the popup instead of resetting to initial state
