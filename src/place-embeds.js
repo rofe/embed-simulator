@@ -160,9 +160,10 @@ function removeEmbed(embedId) {
   }
 }
 
-// Listen for messages from popup or service worker
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  switch (request.action) {
+if (!window.aemEmbeds.placeEmbedsInitialized) {
+  // Listen for messages from popup or service worker
+  chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    switch (request.action) {
     case 'startPickerMode':
       startPickerMode();
       break;
@@ -172,5 +173,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     case 'removeEmbed':
       removeEmbed(request.embedId);
       break;
-  }
-});
+    }
+  });
+  window.aemEmbeds.placeEmbedsInitialized = true;
+}

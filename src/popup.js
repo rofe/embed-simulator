@@ -154,31 +154,22 @@ async function updateUI() {
 function removeEmbed(index) {
   chrome.storage.local.get({embeds: []}, function(result) {
     const embeds = result.embeds;
-    const currentEmbeds = embeds.filter(embed => embed.tabUrl === currentTabUrl);
+    const currentEmbeds = embeds.filter((embed) => matchUrl(currentTabUrl, embed.tabUrl));
 
     if (index >= 0 && index < currentEmbeds.length) {
-      // Find the actual index in the full embeds array
-      const fullIndex = embeds.findIndex(embed =>
-        embed.tabUrl === currentTabUrl &&
-        embed.embedUrl === currentEmbeds[index].embedUrl &&
-        embed.selector === currentEmbeds[index].selector
-      );
+      const embedToDelete = embeds[index];
+      embeds.splice(index, 1);
 
-      if (fullIndex !== -1) {
-        const embedToDelete = embeds[fullIndex];
-        embeds.splice(fullIndex, 1);
+      // Send message to content script to remove the iframe
+      chrome.tabs.sendMessage(currentTabId, {
+        action: 'removeEmbed',
+        embedId: embedToDelete.id
+      });
 
-        // Send message to content script to remove the iframe
-        chrome.tabs.sendMessage(currentTabId, {
-          action: 'removeEmbed',
-          embedId: embedToDelete.id
-        });
-
-        chrome.storage.local.set({embeds}, function() {
-          console.log('Embed deleted, updating UI');
-          updateUI();
-        });
-      }
+      chrome.storage.local.set({embeds}, function() {
+        console.log('Embed deleted, updating UI');
+        updateUI();
+      });
     }
   });
 }
