@@ -32,6 +32,15 @@ function initializePopup() {
 
 }
 
+function matchUrl(currentUrl, tabUrl) {
+  if (tabUrl.endsWith('*')) {
+    // wildcard match
+    return currentUrl.startsWith(tabUrl.slice(0, -1));
+  }
+  // exact match without hash
+  return currentUrl.split('#')[0] === tabUrl.split('#')[0];
+}
+
 // Update UI based on current state
 async function updateUI() {
   const embedControls = document.getElementById('embedControls');
@@ -88,7 +97,7 @@ async function updateUI() {
     default:
       // Get existing embeds for current URL
       chrome.storage.local.get({ embeds: [] }, function (result) {
-        const currentEmbeds = result.embeds.filter(embed => embed.tabUrl === currentTabUrl);
+        const currentEmbeds = result.embeds.filter(embed => matchUrl(currentTabUrl, embed.tabUrl));
 
         let embedsList = '';
         if (currentEmbeds.length > 0) {

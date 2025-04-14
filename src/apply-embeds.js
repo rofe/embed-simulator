@@ -34,6 +34,15 @@ function createEmbed(element, { id, embedUrl, embedWidth, embedHeight }) {
   window.aemEmbeds.appliedEmbeds.push(id);
 }
 
+function matchUrl(currentUrl, tabUrl) {
+  if (tabUrl.endsWith('*')) {
+    // wildcard match
+    return currentUrl.startsWith(tabUrl.slice(0, -1));
+  }
+  // exact match without hash
+  return currentUrl.split('#')[0] === tabUrl.split('#')[0];
+}
+
 function applyEmbeds(embeds) {
   const currentUrl = window.location.href;
   window.aemEmbeds.delayedEmbeds = [];
@@ -41,7 +50,7 @@ function applyEmbeds(embeds) {
   // Process embeds
   embeds
     .filter(embed => !window.aemEmbeds.appliedEmbeds.includes(embed.id)) // Only apply new embeds
-    .filter(embed => embed.tabUrl === currentUrl)
+    .filter(embed => matchUrl(currentUrl, embed.tabUrl))
     .forEach(embed => {
       const element = document.querySelector(embed.selector);
       if (element) {
