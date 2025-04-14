@@ -154,21 +154,21 @@ function handleClick(e) {
 }
 
 // Helper function to create an embed
-function createEmbed(element, { id, embedUrl }) {
+function createEmbed(element, { id, embedUrl, embedWidth, embedHeight }) {
   const iframeUrl = new URL('https://main--aem-embed--adobe.aem.page/tools/iframe/iframe.html');
   iframeUrl.searchParams.set('url', embedUrl);
 
   const embedHTML = `
     <style>
       #aem-embed-${id} {
-        width: 100%;
+        width: ${embedWidth || '100%'};
         max-width: 1200px;
-        min-height: 280px;
+        min-height: ${embedHeight || '280px'};
         border: none;
       }
       @media (min-width: 900px) {
         #aem-embed-${id} {
-          min-height: 166px;
+          min-height: ${embedHeight || '166px'};
         }
       }
     </style>
