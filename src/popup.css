@@ -111,6 +111,10 @@ input[type="text"]:focus {
   margin: var(--spectrum-spacing-200) 0;
 }
 
+.popup button.embed-card-delete {
+  width: auto;
+}
+
 .popup .options-section {
   margin-top: var(--spectrum-spacing-400);
 }
@@ -196,7 +200,7 @@ input[type="text"]:focus {
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
+  margin: 8px 0;
   font-size: 14px;
   font-weight: 500;
   color: #2c2c2c;

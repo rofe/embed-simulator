@@ -89,9 +89,12 @@ function applyEmbeds(embeds) {
   }
 }
 
-// Listen for messages from popup or service worker
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-  if (request.action === 'applyEmbeds') {
-    applyEmbeds(request.embeds || []);
-  }
-});
+if (!window.aemEmbeds.appliedEmbedsInitialized) {
+  // Listen for messages from popup or service worker
+  chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.action === 'applyEmbeds') {
+      applyEmbeds(request.embeds || []);
+    }
+  });
+  window.aemEmbeds.appliedEmbedsInitialized = true;
+}

@@ -8,15 +8,18 @@ const UI_STATE = {
 let currentState = UI_STATE.INITIAL;
 let selector = null;
 let currentTabUrl = null;
+let currentTabId = null;
 
 // Initialize the popup
 function initializePopup() {
   // Get current tab URL
-  chrome.tabs.query({active: true, currentWindow: true}, async function(tabs) {
+  chrome.tabs.query({active: true, currentWindow: true}, async (tabs) => {
     currentTabUrl = tabs[0].url;
+    currentTabId = tabs[0].id;
+
     // execute content script
     await chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
+      target: { tabId: currentTabId },
       files: ['./place-embeds.js'],
     });
 
@@ -52,15 +55,19 @@ async function updateUI() {
         <h2>Add Embed</h2>
         <div class="form-group">
           <label for="embedUrl" class="required">Embed URL</label>
-          <input type="text" id="embedUrl" class="spectrum-Textfield" required>
+          <input type="url" id="embedUrl" class="spectrum-Textfield" required>
+        </div>
+        <div class="form-group-collapsible">
+          <label for="targetUrl">Target URL (<code>*</code> suffix supported)</label>
+          <input type="text" id="tabUrl" class="spectrum-Textfield" value="${currentTabUrl}">
         </div>
         <div class="form-group">
           <label for="embedName">Name</label>
           <input type="text" id="embedName" class="spectrum-Textfield" placeholder="Embed n">
           <label for="embedHeight">Width</label>
-          <input type="text" id="embedWidth" class="spectrum-Textfield" placeholder="100%">
+          <input type="text" id="embedWidth" class="spectrum-Textfield" placeholder="Automatic">
           <label for="embedHeight">Height</label>
-          <input type="text" id="embedHeight" class="spectrum-Textfield" placeholder="166px">
+          <input type="text" id="embedHeight" class="spectrum-Textfield" placeholder="Automatic">
         </div>
         <div class="form-button-group">
           <button id="confirmEmbed" class="spectrum-Button spectrum-Button--primary" disabled>Confirm</button>
@@ -78,20 +85,24 @@ async function updateUI() {
       });
       embedUrlInput.focus();
 
+      document.querySelectorAll('.form-group-collapsible').forEach((group) => {
+        group.addEventListener('click', () => {
+          group.classList.toggle('expanded');
+        });
+      });
+
       confirmButton.addEventListener('click', saveEmbed);
       cancelButton.addEventListener('click', resetToInitialState);
       break;
 
     case UI_STATE.PICKER:
       // Send message to content script to start picker mode
-      chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        console.log('Sending startPickerMode message to tab:', tabs[0].id);
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'startPickerMode' });
+      console.log('Sending startPickerMode message to tab:', currentTabId);
+      chrome.tabs.sendMessage(currentTabId, { action: 'startPickerMode' });
 
-        // Close the popup window
-        console.log('Closing popup window to allow page interaction');
-        window.close();
-      });
+      // Close the popup window
+      console.log('Closing popup window to allow page interaction');
+      window.close();
       break;
 
     default:
@@ -143,33 +154,22 @@ async function updateUI() {
 function removeEmbed(index) {
   chrome.storage.local.get({embeds: []}, function(result) {
     const embeds = result.embeds;
-    const currentEmbeds = embeds.filter(embed => embed.tabUrl === currentTabUrl);
+    const currentEmbeds = embeds.filter((embed) => matchUrl(currentTabUrl, embed.tabUrl));
 
     if (index >= 0 && index < currentEmbeds.length) {
-      // Find the actual index in the full embeds array
-      const fullIndex = embeds.findIndex(embed =>
-        embed.tabUrl === currentTabUrl &&
-        embed.embedUrl === currentEmbeds[index].embedUrl &&
-        embed.selector === currentEmbeds[index].selector
-      );
+      const embedToDelete = embeds[index];
+      embeds.splice(index, 1);
 
-      if (fullIndex !== -1) {
-        const embedToDelete = embeds[fullIndex];
-        embeds.splice(fullIndex, 1);
+      // Send message to content script to remove the iframe
+      chrome.tabs.sendMessage(currentTabId, {
+        action: 'removeEmbed',
+        embedId: embedToDelete.id
+      });
 
-        // Send message to content script to remove the iframe
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-          chrome.tabs.sendMessage(tabs[0].id, {
-            action: 'removeEmbed',
-            embedId: embedToDelete.id
-          });
-        });
-
-        chrome.storage.local.set({embeds}, function() {
-          console.log('Embed deleted, updating UI');
-          updateUI();
-        });
-      }
+      chrome.storage.local.set({embeds}, function() {
+        console.log('Embed deleted, updating UI');
+        updateUI();
+      });
     }
   });
 }
@@ -186,10 +186,8 @@ function resetToInitialState() {
   selector = null;
 
   // Remove highlight overlay
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    chrome.tabs.sendMessage(tabs[0].id, {
-      action: 'stopPickerMode'
-    });
+  chrome.tabs.sendMessage(currentTabId, {
+    action: 'stopPickerMode'
   });
 
   updateUI();
@@ -204,46 +202,42 @@ function saveEmbed() {
     return;
   }
 
+  const tabUrl = document.getElementById('tabUrl').value.trim();
   const embedName = document.getElementById('embedName').value.trim();
   const embedWidth = document.getElementById('embedWidth').value.trim();
   const embedHeight = document.getElementById('embedHeight').value.trim();
-  // Get current tab URL
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    const tabUrl = tabs[0].url;
-    console.log('Current tab URL:', tabUrl);
 
-    // Save configuration
-    chrome.storage.local.get({embeds: []}, function(result) {
-      console.log('Current embeds:', result.embeds);
-      const embeds = result.embeds || [];
+  // Save configuration
+  chrome.storage.local.get({embeds: []}, function(result) {
+    console.log('Current embeds:', result.embeds);
+    const embeds = result.embeds || [];
 
-      // Find the next available ID
-      const nextId = embeds.length > 0
-        ? Math.max(...embeds.map(e => e.id || 0)) + 1
-        : 1;
+    // Find the next available ID
+    const nextId = embeds.length > 0
+      ? Math.max(...embeds.map(e => e.id || 0)) + 1
+      : 1;
 
-      const newEmbed = {
-        id: nextId,
-        tabUrl,
-        selector,
-        embedName: embedName || `Embed ${nextId}`,
-        embedWidth: embedWidth || '100%',
-        embedHeight: embedHeight || '110px',
-        embedUrl,
-      };
+    const newEmbed = {
+      id: nextId,
+      tabUrl,
+      selector,
+      embedName: embedName || `Embed ${nextId}`,
+      embedWidth: embedWidth || '100%',
+      embedHeight: embedHeight || '110px',
+      embedUrl,
+    };
 
-      embeds.push(newEmbed);
+    embeds.push(newEmbed);
 
-      chrome.storage.local.set({embeds}, function() {
-        console.log('Saved new embed configuration:', newEmbed);
-        // Remove highlight overlay before closing
-        chrome.tabs.sendMessage(tabs[0].id, {
-          action: 'stopPickerMode'
-        });
-        // Close the popup instead of resetting to initial state
-        console.log('Closing popup');
-        window.close();
+    chrome.storage.local.set({embeds}, function() {
+      console.log('Saved new embed configuration:', newEmbed);
+      // Remove highlight overlay before closing
+      chrome.tabs.sendMessage(currentTabId, {
+        action: 'stopPickerMode'
       });
+      // Close the popup instead of resetting to initial state
+      console.log('Closing popup');
+      window.close();
     });
   });
 }
