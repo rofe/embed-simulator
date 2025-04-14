@@ -155,6 +155,9 @@ function handleClick(e) {
 
 // Helper function to create an embed
 function createEmbed(element, { id, embedUrl }) {
+  const iframeUrl = new URL('https://main--aem-embed--adobe.aem.page/tools/iframe/iframe.html');
+  iframeUrl.searchParams.set('url', embedUrl);
+
   const embedHTML = `
     <style>
       #aem-embed-${id} {
@@ -171,7 +174,7 @@ function createEmbed(element, { id, embedUrl }) {
     </style>
     <iframe 
       id="aem-embed-${id}"
-      src="${embedUrl}"
+      src="${iframeUrl}"
     ></iframe>
   `;
 
