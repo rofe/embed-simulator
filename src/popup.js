@@ -12,8 +12,13 @@ let currentTabUrl = null;
 // Initialize the popup
 function initializePopup() {
   // Get current tab URL
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  chrome.tabs.query({active: true, currentWindow: true}, async function(tabs) {
     currentTabUrl = tabs[0].url;
+    // execute content script
+    await chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      files: ['./place-embeds.js'],
+    });
 
     // Check if we have a selected element from the service worker
     chrome.runtime.sendMessage({action: 'getSelectedElement'}, function(response) {
@@ -27,8 +32,17 @@ function initializePopup() {
 
 }
 
+function matchUrl(currentUrl, tabUrl) {
+  if (tabUrl.endsWith('*')) {
+    // wildcard match
+    return currentUrl.startsWith(tabUrl.slice(0, -1));
+  }
+  // exact match without hash
+  return currentUrl.split('#')[0] === tabUrl.split('#')[0];
+}
+
 // Update UI based on current state
-function updateUI() {
+async function updateUI() {
   const embedControls = document.getElementById('embedControls');
   embedControls.innerHTML = '';
 
@@ -87,7 +101,7 @@ function updateUI() {
     default:
       // Get existing embeds for current URL
       chrome.storage.local.get({ embeds: [] }, function (result) {
-        const currentEmbeds = result.embeds.filter(embed => embed.tabUrl === currentTabUrl);
+        const currentEmbeds = result.embeds.filter(embed => matchUrl(currentTabUrl, embed.tabUrl));
 
         let embedsList = '';
         if (currentEmbeds.length > 0) {

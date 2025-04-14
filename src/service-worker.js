@@ -10,7 +10,7 @@ function applyEmbeds(tabId) {
       // execute content script
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: ['./content.js'],
+        files: ['./apply-embeds.js'],
       });
       // send message to content script
       await chrome.tabs.sendMessage(tabId, {
