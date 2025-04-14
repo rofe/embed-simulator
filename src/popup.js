@@ -42,7 +42,7 @@ function updateUI() {
         </div>
         <div class="form-group">
           <label for="embedName">Name</label>
-          <input type="text" id="embedName" class="spectrum-Textfield">
+          <input type="text" id="embedName" class="spectrum-Textfield" placeholder="Embed n">
           <label for="embedHeight">Width</label>
           <input type="text" id="embedWidth" class="spectrum-Textfield" placeholder="100%">
           <label for="embedHeight">Height</label>

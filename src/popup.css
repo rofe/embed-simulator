@@ -1,5 +1,7 @@
 @import 'spectrum.css';
 
+/* Popup styles */
+
 body {
   font-family: var(--spectrum-font-family);
   font-size: var(--spectrum-font-size-base);
@@ -192,23 +194,6 @@ input[type="text"]:focus {
   margin-bottom: var(--spectrum-spacing-500);
 }
 
-label {
-  display: block;
-  margin-bottom: var(--spectrum-spacing-200);
-  font-size: var(--spectrum-font-size-base);
-  font-weight: var(--spectrum-font-weight-medium);
-  color: var(--spectrum-text);
-}
-
-.spectrum-Textfield:focus {
-  outline: none;
-  border-color: #1473e6;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
 .form-group label {
   display: block;
   margin-bottom: 8px;
@@ -217,7 +202,6 @@ label {
   color: #2c2c2c;
 }
 
-/* Popup styles */
 .embeds-list {
   margin-bottom: 16px;
 }

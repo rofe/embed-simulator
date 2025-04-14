@@ -61,7 +61,6 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 
 // Listen for messages from content script and popup
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('Service worker received message:', request);
   switch (request.action) {
     case 'elementSelected':
       if (request.selector) {
