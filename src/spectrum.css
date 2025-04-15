@@ -34,6 +34,9 @@
   --spectrum-border-radius-100: 4px;
   --spectrum-border-radius-200: 6px;
   --spectrum-border-radius-pill: 50%;
+
+/* Colors */
+  --spectrum-text-error: #dd0000;
 }
 
 /* Spectrum CSS */

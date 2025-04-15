@@ -2,6 +2,40 @@
 window.aemEmbeds = window.aemEmbeds || {};
 window.aemEmbeds.isPickerMode = false;
 
+function generateSelector(elem) {
+  const {
+    tagName,
+    id,
+    className,
+    parentElement,
+  } = elem;
+
+  let str = tagName.toLowerCase();
+
+  if (str === 'html') {
+    return str;
+  }
+
+  str += (id !== '') ? `#${id}` : '';
+
+  if (className) {
+    const classes = className.split(/\s/);
+    for (let i = 0; i < classes.length; i += 1) {
+      str += `.${classes[i]}`;
+    }
+  }
+
+  let childIndex = 1;
+
+  for (let e = elem; e.previousElementSibling; e = e.previousElementSibling) {
+    childIndex += 1;
+  }
+
+  str += `:nth-child(${childIndex})`;
+
+  return `${generateSelector(parentElement)} > ${str}`;
+}
+
 // Create overlay div
 function createOverlay() {
   const overlay = document.createElement('div');
@@ -64,23 +98,6 @@ function removeOverlay() {
   }
 }
 
-function startPickerMode() {
-  window.aemEmbeds.isPickerMode = true;
-  document.body.style.cursor = 'crosshair';
-  document.addEventListener('mousemove', handleMouseMove);
-  document.addEventListener('click', handleClick);
-}
-
-function stopPickerMode() {
-  window.aemEmbeds.isPickerMode = false;
-  document.body.style.cursor = '';
-  document.removeEventListener('mousemove', handleMouseMove);
-  document.removeEventListener('click', handleClick);
-  removeOverlay();
-  delete window.aemEmbeds.highlightedElementSelector;
-  delete window.aemEmbeds.selectedElementSelector;
-}
-
 function handleMouseMove(e) {
   if (!window.aemEmbeds.isPickerMode) return;
 
@@ -90,40 +107,6 @@ function handleMouseMove(e) {
 
   window.aemEmbeds.highlightedElementSelector = generateSelector(element);
   updateOverlay(element);
-}
-
-function generateSelector(elem) {
-  const {
-    tagName,
-    id,
-    className,
-    parentElement,
-  } = elem;
-
-  let str = tagName.toLowerCase();
-
-  if (str === 'html') {
-    return str;
-  }
-
-  str += (id !== '') ? `#${id}` : '';
-
-  if (className) {
-    const classes = className.split(/\s/);
-    for (let i = 0; i < classes.length; i++) {
-      str += `.${classes[i]}`;
-    }
-  }
-
-  let childIndex = 1;
-
-  for (let e = elem; e.previousElementSibling; e = e.previousElementSibling) {
-    childIndex += 1;
-  }
-
-  str += `:nth-child(${childIndex})`;
-
-  return `${generateSelector(parentElement)} > ${str}`;
 }
 
 function handleClick(e) {
@@ -160,19 +143,37 @@ function removeEmbed(embedId) {
   }
 }
 
+function startPickerMode() {
+  window.aemEmbeds.isPickerMode = true;
+  document.body.style.cursor = 'crosshair';
+  document.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('click', handleClick);
+}
+
+function stopPickerMode() {
+  window.aemEmbeds.isPickerMode = false;
+  document.body.style.cursor = '';
+  document.removeEventListener('mousemove', handleMouseMove);
+  document.removeEventListener('click', handleClick);
+  removeOverlay();
+  delete window.aemEmbeds.highlightedElementSelector;
+  delete window.aemEmbeds.selectedElementSelector;
+}
+
 if (!window.aemEmbeds.placeEmbedsInitialized) {
   // Listen for messages from popup or service worker
-  chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  chrome.runtime.onMessage.addListener((request) => {
+    // eslint-disable-next-line default-case
     switch (request.action) {
-    case 'startPickerMode':
-      startPickerMode();
-      break;
-    case 'stopPickerMode':
-      stopPickerMode();
-      break;
-    case 'removeEmbed':
-      removeEmbed(request.embedId);
-      break;
+      case 'startPickerMode':
+        startPickerMode();
+        break;
+      case 'stopPickerMode':
+        stopPickerMode();
+        break;
+      case 'removeEmbed':
+        removeEmbed(request.embedId);
+        break;
     }
   });
   window.aemEmbeds.placeEmbedsInitialized = true;

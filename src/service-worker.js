@@ -27,7 +27,7 @@ function applyEmbeds(tabId) {
 let lastSelector = null;
 
 // Listen for tab URL updates
-chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === 'complete' && tab.active) {
     console.log('Tab URL updated:', tab.url);
     applyEmbeds(tabId, true);
@@ -35,7 +35,7 @@ chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab) {
 });
 
 // Listen for tab activation
-chrome.tabs.onActivated.addListener(async function ({ tabId }) {
+chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   const tab = await chrome.tabs.get(tabId);
   if (tab.url) {
     console.log('Tab activated:', tab.url);
@@ -44,14 +44,14 @@ chrome.tabs.onActivated.addListener(async function ({ tabId }) {
 });
 
 // Listen for storage changes
-chrome.storage.onChanged.addListener(function(changes, namespace) {
+chrome.storage.onChanged.addListener((changes, namespace) => {
   console.log('Storage changed:', changes);
 
   if (namespace === 'local' && changes.embeds) {
     console.log('Embeds configuration changed, applying to current tab');
 
     // Get the current active tab and send the embeds to it
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    chrome.tabs.query(({ active: true, currentWindow: true }), (tabs) => {
       if (tabs[0] && tabs[0].id) {
         applyEmbeds(tabs[0].id);
       }
@@ -60,12 +60,13 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
 });
 
 // Listen for messages from content script and popup
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // eslint-disable-next-line default-case
   switch (request.action) {
     case 'elementSelected':
       if (request.selector) {
         console.log('Storing selected element data');
-        lastSelector = request.selector,
+        lastSelector = request.selector;
         // Open the popup
         console.log('Opening popup in configure state');
         chrome.action.openPopup(() => {

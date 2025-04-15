@@ -5,16 +5,16 @@
 body {
   font-family: var(--spectrum-font-family);
   font-size: var(--spectrum-font-size-base);
-  line-height: 1.5;
+  line-height: 1;
   background-color: var(--spectrum-background);
   color: var(--spectrum-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  width: 400px;
-  padding: 16px;
+  padding: var(--spectrum-spacing-200);
 }
 
 h1 {
+  margin: var(--spectrum-spacing-400) 0 var(--spectrum-spacing-600);
   padding-left: 60px;
   position: relative;
 }
@@ -23,7 +23,7 @@ h1:before {
   display: block;
   position: absolute;
   left: 0;
-  top: -4px;
+  top: -10px;
   content: '';
   color: transparent;
   background: url('./icons/icon48.png') no-repeat center center;
@@ -83,9 +83,13 @@ input[type="text"]:focus {
   outline: none;
 }
 
+input:invalid {
+  border: solid 2px var(--spectrum-text-error);
+}
+
 /* Popup specific styles */
 .popup {
-  width: 300px;
+  width: 400px;
   padding: var(--spectrum-spacing-400);
   box-sizing: border-box;
 }

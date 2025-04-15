@@ -3,7 +3,9 @@ window.aemEmbeds = window.aemEmbeds || {};
 window.aemEmbeds.appliedEmbeds = [];
 
 // Helper function to create an embed
-function createEmbed(element, { id, embedUrl, embedWidth, embedHeight }) {
+function createEmbed(element, {
+  id, embedUrl, embedWidth, embedHeight,
+}) {
   const iframeUrl = new URL('https://main--aem-embed--adobe.aem.page/tools/iframe/iframe.html');
   iframeUrl.searchParams.set('url', embedUrl);
 
@@ -49,9 +51,9 @@ function applyEmbeds(embeds) {
 
   // Process embeds
   embeds
-    .filter(embed => !window.aemEmbeds.appliedEmbeds.includes(embed.id)) // Only apply new embeds
-    .filter(embed => matchUrl(currentUrl, embed.tabUrl))
-    .forEach(embed => {
+    .filter((embed) => !window.aemEmbeds.appliedEmbeds.includes(embed.id)) // Only apply new embeds
+    .filter((embed) => matchUrl(currentUrl, embed.tabUrl))
+    .forEach((embed) => {
       const element = document.querySelector(embed.selector);
       if (element) {
         createEmbed(element, embed);
@@ -62,15 +64,16 @@ function applyEmbeds(embeds) {
 
   // If we have delayed embeds, start observing DOM changes
   if (window.aemEmbeds.delayedEmbeds.length > 0) {
-    const observer = new MutationObserver(function (mutations) {
-      mutations.forEach(function (mutation) {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
         if (mutation.addedNodes.length) {
           // Check if any delayed embeds can now be applied
           [...window.aemEmbeds.delayedEmbeds].forEach((embed, index) => {
             const element = document.querySelector(embed.selector);
             if (element) {
               createEmbed(element, embed);
-              window.aemEmbeds.delayedEmbeds.splice(window.aemEmbeds.delayedEmbeds.length - 1 - index, 1);
+              window.aemEmbeds.delayedEmbeds
+                .splice(window.aemEmbeds.delayedEmbeds.length - 1 - index, 1);
             }
           });
 
@@ -84,14 +87,14 @@ function applyEmbeds(embeds) {
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
     });
   }
 }
 
 if (!window.aemEmbeds.appliedEmbedsInitialized) {
   // Listen for messages from popup or service worker
-  chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  chrome.runtime.onMessage.addListener((request) => {
     if (request.action === 'applyEmbeds') {
       applyEmbeds(request.embeds || []);
     }
