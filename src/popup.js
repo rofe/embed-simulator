@@ -125,10 +125,10 @@ async function updateUI() {
         <h2>Add Embed</h2>
         <div class="form-group">
           <label for="embedUrl" class="required">Embed URL*</label>
-          <input type="url" id="embedUrl" class="spectrum-Textfield" required>
+          <input type="url" id="embedUrl" class="spectrum-Textfield" placeholder="https://" pattern="https://.*" required>
         </div>
         <div class="form-group-collapsible">
-          <label for="targetUrl">Target URL (<code>*</code> suffix supported)</label>
+          <label for="targetUrl" title="${selector}">Target URL (<code>*</code> suffix supported)</label>
           <input type="text" id="tabUrl" class="spectrum-Textfield" pattern="https://.*" value="${currentTabUrl}">
         </div>
         <div class="form-group">

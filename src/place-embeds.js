@@ -6,7 +6,7 @@ function generateSelector(elem) {
   const {
     tagName,
     id,
-    className,
+    classList,
     parentElement,
   } = elem;
 
@@ -16,14 +16,9 @@ function generateSelector(elem) {
     return str;
   }
 
-  str += (id !== '') ? `#${id}` : '';
+  str += (id !== '') ? `#${CSS.escape(id)}` : '';
 
-  if (className) {
-    const classes = className.split(/\s/);
-    for (let i = 0; i < classes.length; i += 1) {
-      str += `.${classes[i]}`;
-    }
-  }
+  str += [...classList].map((cls) => `.${CSS.escape(cls)}`).join('');
 
   let childIndex = 1;
 
