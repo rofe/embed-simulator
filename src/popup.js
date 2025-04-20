@@ -129,23 +129,23 @@ function updateEmbed() {
     console.log('Current embeds:', result.embeds);
     const embeds = result.embeds || [];
 
-    const updatedEmbed = {
-      ...editingEmbed,
-      tabUrl,
-      selector: newSelector,
-      embedName: embedName || editingEmbed.embedName,
-      embedWidth: embedWidth || editingEmbed.embedWidth,
-      embedHeight: embedHeight || editingEmbed.embedHeight,
-      embedUrl,
-    };
-
     const index = embeds.findIndex((e) => e.id === editingEmbed.id);
     if (index !== -1) {
+      const updatedEmbed = {
+        ...editingEmbed,
+        tabUrl,
+        selector: newSelector,
+        embedName: embedName || `Embed ${index + 1}`,
+        embedWidth,
+        embedHeight,
+        embedUrl,
+      };
+
       embeds[index] = updatedEmbed;
     }
 
     chrome.storage.local.set({ embeds }, () => {
-      console.log('Updated embed configuration:', updatedEmbed);
+      console.log('Updated embed configuration:', index);
       // Close the popup
       console.log('Closing popup');
       window.close();
