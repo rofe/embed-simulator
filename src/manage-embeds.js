@@ -2,7 +2,7 @@
 window.aemEmbeds = window.aemEmbeds || {};
 window.aemEmbeds.isPickerMode = false;
 
-function generateSelector(elem) {
+function generateSelector(elem, isParent = false) {
   const {
     tagName,
     id,
@@ -22,13 +22,14 @@ function generateSelector(elem) {
 
   let childIndex = 1;
 
-  for (let e = elem; e.previousElementSibling; e = e.previousElementSibling) {
-    childIndex += 1;
+  if (isParent) {
+    for (let e = elem; e.previousElementSibling; e = e.previousElementSibling) {
+      childIndex += 1;
+    }
+    str += `:nth-child(${childIndex})`;
   }
 
-  str += `:nth-child(${childIndex})`;
-
-  return `${generateSelector(parentElement)} > ${str}`;
+  return `${generateSelector(parentElement, true)} > ${str}`;
 }
 
 // Create overlay div
@@ -61,6 +62,10 @@ function createOverlay() {
 
 // Update overlay position and size
 function updateOverlay(element, isSelected = false) {
+  if (!element) {
+    return;
+  }
+
   let highlightOverlay = document.getElementById('aem-highlight-overlay');
   if (!highlightOverlay) {
     highlightOverlay = createOverlay();
@@ -155,6 +160,20 @@ function stopPickerMode() {
   delete window.aemEmbeds.selectedElementSelector;
 }
 
+function showHighlight(id) {
+  const element = document.getElementById(`aem-embed-${id}`);
+  if (element) {
+    element.style.outline = '2px solid #2680eb';
+  }
+}
+
+function hideHighlight(id) {
+  const element = document.getElementById(`aem-embed-${id}`);
+  if (element) {
+    element.removeAttribute('style');
+  }
+}
+
 if (!window.aemEmbeds.placeEmbedsInitialized) {
   // Listen for messages from popup or service worker
   chrome.runtime.onMessage.addListener((request) => {
@@ -168,6 +187,12 @@ if (!window.aemEmbeds.placeEmbedsInitialized) {
         break;
       case 'removeEmbed':
         removeEmbed(request.embedId);
+        break;
+      case 'showHighlight':
+        showHighlight(request.embedId);
+        break;
+      case 'hideHighlight':
+        hideHighlight(request.embedId);
         break;
     }
   });
