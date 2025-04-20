@@ -4,7 +4,7 @@ import matchUrl from './utils.js';
 const UI_STATE = {
   INITIAL: 'initial',
   PICKER: 'picker',
-  CONFIGURE: 'configure',
+  ADD: 'add',
   EDIT: 'edit',
 };
 
@@ -37,14 +37,15 @@ function resetToInitialState() {
 
 // Save embed configuration
 function saveEmbed() {
-  console.log('Saving embed configuration...');
+  document.getElementById('form').classList.add('submit');
+
   const embedUrl = document.getElementById('embedUrl').value.trim();
   if (!embedUrl) {
-    console.log('No embed URL provided, skipping save');
+    // eslint-disable-next-line no-alert
+    // alert('Check missing or invalid required fields');
     return;
   }
 
-  const tabUrl = document.getElementById('tabUrl').value.trim();
   const embedName = document.getElementById('embedName').value.trim();
   const embedWidth = document.getElementById('embedWidth').value.trim();
   const embedHeight = document.getElementById('embedHeight').value.trim();
@@ -61,7 +62,7 @@ function saveEmbed() {
 
     const newEmbed = {
       id: nextId,
-      tabUrl,
+      tabUrl: currentTabUrl,
       selector,
       embedName: embedName || `Embed ${nextId}`,
       embedWidth,
@@ -111,18 +112,20 @@ function removeEmbed(index) {
 
 // Update embed configuration
 function updateEmbed() {
-  console.log('Updating embed configuration...');
-  const embedUrl = document.getElementById('embedUrl').value.trim();
-  if (!embedUrl) {
-    console.log('No embed URL provided, skipping update');
-    return;
-  }
+  document.getElementById('form').classList.add('submit');
 
-  const tabUrl = document.getElementById('tabUrl').value.trim();
+  const embedUrl = document.getElementById('embedUrl').value.trim();
+  const newTabUrl = document.getElementById('tabUrl').value.trim();
   const newSelector = document.getElementById('selector').value.trim();
   const embedName = document.getElementById('embedName').value.trim();
   const embedWidth = document.getElementById('embedWidth').value.trim();
   const embedHeight = document.getElementById('embedHeight').value.trim();
+
+  if (!embedUrl || !newTabUrl || !newSelector) {
+    // eslint-disable-next-line no-alert
+    // alert('Check missing or invalid required fields');
+    return;
+  }
 
   // Update configuration
   chrome.storage.local.get({ embeds: [] }, (result) => {
@@ -133,7 +136,7 @@ function updateEmbed() {
     if (index !== -1) {
       const updatedEmbed = {
         ...editingEmbed,
-        tabUrl,
+        tabUrl: newTabUrl,
         selector: newSelector,
         embedName: embedName || `Embed ${index + 1}`,
         embedWidth,
@@ -159,13 +162,12 @@ async function updateUI() {
   embedControls.innerHTML = '';
 
   switch (currentState) {
-    case UI_STATE.CONFIGURE:
+    case UI_STATE.ADD:
       embedControls.innerHTML = `
         <h2>Add Embed</h2>
-        <div class="form-group">
-          <label for="embedUrl" class="required">Embed URL*</label>
+        <div id="form" class="form-group">
+          <label for="embedUrl" class="required">Embed URL</label>
           <input type="url" id="embedUrl" class="spectrum-Textfield" placeholder="https://" pattern="https://.*" required>
-          <input type="hidden" id="tabUrl" value="${currentTabUrl}">
           <label for="embedName">Name</label>
           <input type="text" id="embedName" class="spectrum-Textfield" placeholder="Embed n">
           <label for="embedHeight">Width</label>
@@ -174,58 +176,41 @@ async function updateUI() {
           <input type="text" id="embedHeight" class="spectrum-Textfield" placeholder="Automatic">
         </div>
         <div class="form-button-group">
-          <button id="confirmEmbed" class="spectrum-Button spectrum-Button--primary" disabled>Confirm</button>
-          <button id="cancelConfigure" class="spectrum-Button spectrum-Button--secondary">Cancel</button>
+          <button id="confirm" class="spectrum-Button spectrum-Button--primary">Confirm</button>
+          <button id="cancel" class="spectrum-Button spectrum-Button--secondary">Cancel</button>
         </div>
       `;
 
-      /* eslint-disable no-case-declarations */
-      const embedUrlInput = document.getElementById('embedUrl');
-      const confirmButton = document.getElementById('confirmEmbed');
-      const cancelButton = document.getElementById('cancelConfigure');
-      /* eslint-enable no-case-declarations */
-
-      embedUrlInput.addEventListener('input', () => {
-        console.log('Embed URL input changed:', embedUrlInput.value);
-        confirmButton.disabled = !embedUrlInput.value.trim();
-      });
-      embedUrlInput.focus();
-
-      document.querySelectorAll('.form-group-collapsible').forEach((group) => {
-        group.addEventListener('click', () => {
-          group.classList.toggle('expanded');
-        });
-      });
-
-      confirmButton.addEventListener('click', saveEmbed);
-      cancelButton.addEventListener('click', resetToInitialState);
+      document.getElementById('embedUrl').focus();
+      document.getElementById('confirm').addEventListener('click', saveEmbed);
+      document.getElementById('cancel').addEventListener('click', resetToInitialState);
       break;
 
     case UI_STATE.EDIT:
       embedControls.innerHTML = `
-        <h2>Edit Embed</h2>
-        <div class="form-group">
-          <label for="embedUrl" class="required">Embed URL*</label>
+        <h2>Edit ${editingEmbed.embedName}</h2>
+        <div id="form" class="form-group">
+          <label for="embedUrl" class="required">Embed URL</label>
           <input type="url" id="embedUrl" class="spectrum-Textfield" placeholder="https://" pattern="https://.*" required value="${editingEmbed.embedUrl}">
+          <label for="targetUrl" class="required">Target URL (<code>*</code> suffix supported)</label>
+          <input type="text" id="tabUrl" class="spectrum-Textfield" pattern="https://.*" value="${editingEmbed.tabUrl}" required>
+          <label for="selector" class="required">Target Selector (insert before)</label>
+          <input type="text" id="selector" class="spectrum-Textfield monospace" value="${editingEmbed.selector}" required>
           <label for="embedName">Name</label>
           <input type="text" id="embedName" class="spectrum-Textfield" placeholder="Embed n" value="${editingEmbed.embedName}">
-          <label for="targetUrl">Target URL (<code>*</code> suffix supported)</label>
-          <input type="text" id="tabUrl" class="spectrum-Textfield" pattern="https://.*" value="${editingEmbed.tabUrl}">
-          <label for="selector">Target Selector (insert before)</label>
-          <input type="text" id="selector" class="spectrum-Textfield monospace" value="${editingEmbed.selector}">
-          <label for="embedHeight">Width</label>
+          <label for="embedWidth">Width</label>
           <input type="text" id="embedWidth" class="spectrum-Textfield" placeholder="Automatic" value="${editingEmbed.embedWidth}">
           <label for="embedHeight">Height</label>
           <input type="text" id="embedHeight" class="spectrum-Textfield" placeholder="Automatic" value="${editingEmbed.embedHeight}">
         </div>
         <div class="form-button-group">
-          <button id="updateEmbed" class="spectrum-Button spectrum-Button--primary">Update</button>
-          <button id="cancelEdit" class="spectrum-Button spectrum-Button--secondary">Cancel</button>
+          <button id="update" class="spectrum-Button spectrum-Button--primary">Update</button>
+          <button id="cancel" class="spectrum-Button spectrum-Button--secondary">Cancel</button>
         </div>
       `;
 
-      document.getElementById('updateEmbed').addEventListener('click', updateEmbed);
-      document.getElementById('cancelEdit').addEventListener('click', resetToInitialState);
+      document.getElementById('update').addEventListener('click', updateEmbed);
+      document.getElementById('cancel').addEventListener('click', resetToInitialState);
       break;
 
     case UI_STATE.PICKER:
@@ -329,7 +314,7 @@ function initializePopup() {
     chrome.runtime.sendMessage({ action: 'getSelectedElement' }, (response) => {
       if (response) {
         selector = response.selector;
-        currentState = selector ? UI_STATE.CONFIGURE : UI_STATE.INITIAL;
+        currentState = selector ? UI_STATE.ADD : UI_STATE.INITIAL;
       }
       updateUI();
     });

@@ -13,13 +13,19 @@ body {
   padding: var(--spectrum-spacing-200);
 }
 
-h1 {
+.popup {
+  width: 400px;
+  padding: var(--spectrum-spacing-400);
+  box-sizing: border-box;
+}
+
+.popup h1 {
   margin: var(--spectrum-spacing-400) 0 var(--spectrum-spacing-600);
   padding-left: 60px;
   position: relative;
 }
 
-h1:before {
+.popup h1:before {
   display: block;
   position: absolute;
   left: 0;
@@ -29,21 +35,6 @@ h1:before {
   background: url('./icons/icon48.png') no-repeat center center;
   width: 48px;
   height: 48px;
-}
-
-input#selector {
-  font-family: monospace;
-  font-size: smaller;
-}
-
-input:invalid {
-  border: solid 2px var(--spectrum-alert);
-}
-
-.popup {
-  width: 400px;
-  padding: var(--spectrum-spacing-400);
-  box-sizing: border-box;
 }
 
 .popup h2 {
@@ -67,9 +58,7 @@ input:invalid {
   margin: var(--spectrum-spacing-200) 0;
 }
 
-.popup .options-section {
-  margin-top: var(--spectrum-spacing-400);
-}
+/* Popup form styles */
 
 .popup .embed-form {
   background-color: var(--spectrum-background-hover);
@@ -117,41 +106,29 @@ input:invalid {
   font-weight: var(--spectrum-font-weight-bold);
 }
 
-.popup .remove-embed {
-  background-color: transparent;
-  color: var(--spectrum-text-secondary);
-  border: 1px solid var(--spectrum-border);
-  width: auto;
-  margin-top: var(--spectrum-spacing-200);
+.popup input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.popup .remove-embed:hover {
-  background-color: var(--spectrum-background-hover);
-  color: var(--spectrum-text);
+.popup #form.submit input:invalid {
+  border: solid 2px var(--spectrum-alert);
+}
+
+.popup #form.submit label:has(+ input:invalid) {
+  color: var(--spectrum-alert);
 }
 
 .popup #addEmbed {
   margin-bottom: var(--spectrum-spacing-400);
 }
 
-.popup input[type="text"] {
-  width: 100%;
-  box-sizing: border-box;
+.popup #selector {
+  font-family: monospace;
+  font-size: smaller;
 }
 
-/* Options specific styles */
-.popup .options {
-  max-width: 600px;
-  margin: var(--spectrum-spacing-600) auto;
-  padding: 0 var(--spectrum-spacing-400);
-}
-
-.popup .options h1 {
-  font-size: var(--spectrum-font-size-heading-1);
-  font-weight: var(--spectrum-font-weight-bold);
-  margin: 0 0 var(--spectrum-spacing-500) 0;
-  color: var(--spectrum-text);
-}
+/* Popup embed list styles */
 
 .popup .embeds-list {
   margin-bottom: 16px;
