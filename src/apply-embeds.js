@@ -6,6 +6,8 @@ window.aemEmbeds.appliedEmbeds = [];
 function createEmbed(element, {
   id, embedUrl, embedWidth, embedHeight,
 }) {
+  const existingEmbed = document.getElementById(`aem-embed-${id}`);
+
   const iframeUrl = new URL('https://main--aem-embed--adobe.aem.page/tools/iframe/iframe.html');
   iframeUrl.searchParams.set('url', embedUrl);
 
@@ -29,23 +31,20 @@ function createEmbed(element, {
     ></iframe>
   `;
 
-  // Insert embed HTML before the element
-  // console.log('Inserting embed before element');
-  element.insertAdjacentHTML('beforebegin', embedHTML);
-  // Remember applied embeds
-  window.aemEmbeds.appliedEmbeds.push(id);
-}
-
-function matchUrl(currentUrl, tabUrl) {
-  if (tabUrl.endsWith('*')) {
-    // wildcard match
-    return currentUrl.startsWith(tabUrl.slice(0, -1));
+  if (existingEmbed) {
+    // console.log(`Replacing existing embed ${id}`);
+    existingEmbed.insertAdjacentHTML('beforebegin', embedHTML);
+    existingEmbed.remove();
+  } else {
+    // console.log('Inserting embed before element');
+    element.insertAdjacentHTML('beforebegin', embedHTML);
+    // Remember applied embeds
+    window.aemEmbeds.appliedEmbeds.push(id);
   }
-  // exact match without hash
-  return currentUrl.split('#')[0] === tabUrl.split('#')[0];
 }
 
-function applyEmbeds(embeds) {
+async function applyEmbeds(embeds) {
+  const matchUrl = (await import(chrome.runtime.getURL('utils.js'))).default;
   const currentUrl = window.location.href;
   window.aemEmbeds.delayedEmbeds = [];
 
@@ -68,7 +67,7 @@ function applyEmbeds(embeds) {
       mutations.forEach((mutation) => {
         if (mutation.addedNodes.length) {
           // Check if any delayed embeds can now be applied
-          [...window.aemEmbeds.delayedEmbeds].forEach((embed, index) => {
+          window.aemEmbeds.delayedEmbeds.forEach((embed, index) => {
             const element = document.querySelector(embed.selector);
             if (element) {
               createEmbed(element, embed);

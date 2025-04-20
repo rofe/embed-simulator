@@ -6,6 +6,7 @@
   --spectrum-blue-active: #0944c4;
   --spectrum-text: #1f1f1f;
   --spectrum-text-secondary: #4a4a4a;
+  --spectrum-alert: #dd0000;
   --spectrum-border: #d9d9d9;
   --spectrum-border-hover: #b3b3b3;
   --spectrum-background: #ffffff;
@@ -34,9 +35,6 @@
   --spectrum-border-radius-100: 4px;
   --spectrum-border-radius-200: 6px;
   --spectrum-border-radius-pill: 50%;
-
-/* Colors */
-  --spectrum-text-error: #dd0000;
 }
 
 /* Spectrum CSS */
