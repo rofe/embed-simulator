@@ -62,7 +62,7 @@ function saveEmbed() {
 
     const newEmbed = {
       id: nextId,
-      tabUrl: currentTabUrl,
+      tabUrl: currentTabUrl.split('?')[0].split('#')[0],
       selector,
       embedName: embedName || `Embed ${nextId}`,
       embedWidth,
