@@ -164,6 +164,7 @@ function showHighlight(id) {
   const element = document.getElementById(`aem-embed-${id}`);
   if (element) {
     element.style.outline = '2px solid #2680eb';
+    element.scrollIntoViewIfNeeded();
   }
 }
 
