@@ -189,6 +189,12 @@ if (!window.aemEmbeds.placeEmbedsInitialized) {
       case 'removeEmbed':
         removeEmbed(request.embedId);
         break;
+      case 'removeAllEmbeds':
+        document.querySelectorAll('[id^="aem-embed-"]').forEach((iframe) => {
+          iframe.remove();
+        });
+        removeOverlay();
+        break;
       case 'showHighlight':
         showHighlight(request.embedId);
         break;

@@ -13,6 +13,28 @@ let selector = null;
 let currentTabUrl = null;
 let currentTabId = null;
 let editingEmbed = null;
+let isPaused = false;
+
+function updatePauseButton() {
+  const pauseButton = document.getElementById('pauseButton');
+  if (pauseButton) {
+    pauseButton.textContent = isPaused ? '▶' : '⏸';
+    pauseButton.title = isPaused ? 'Resume' : 'Pause';
+  }
+}
+
+function togglePause() {
+  isPaused = !isPaused;
+  chrome.storage.local.set({ isPaused });
+  updatePauseButton();
+
+  if (isPaused) {
+    // Remove embeds from current tab
+    chrome.tabs.sendMessage(currentTabId, {
+      action: 'removeAllEmbeds',
+    });
+  }
+}
 
 // Start picker mode
 function startPickerMode() {
@@ -161,6 +183,9 @@ async function updateUI() {
   const embedControls = document.getElementById('embedControls');
   embedControls.innerHTML = '';
 
+  // Update pause button state
+  updatePauseButton();
+
   switch (currentState) {
     case UI_STATE.ADD:
       embedControls.innerHTML = `
@@ -304,11 +329,22 @@ function initializePopup() {
     currentTabUrl = tabs[0].url;
     currentTabId = tabs[0].id;
 
-    // execute content script
-    await chrome.scripting.executeScript({
-      target: { tabId: currentTabId },
-      files: ['./manage-embeds.js'],
+    // Load pause state
+    chrome.storage.local.get(['isPaused'], (result) => {
+      isPaused = result.isPaused || false;
+      updatePauseButton();
     });
+
+    // Add click handler for pause button
+    document.getElementById('pauseButton').addEventListener('click', togglePause);
+
+    // execute content script if not paused
+    if (!isPaused) {
+      await chrome.scripting.executeScript({
+        target: { tabId: currentTabId },
+        files: ['./manage-embeds.js'],
+      });
+    }
 
     // Check if we have a selected element from the service worker
     chrome.runtime.sendMessage({ action: 'getSelectedElement' }, (response) => {
