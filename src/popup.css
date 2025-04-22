@@ -199,3 +199,8 @@ body {
   background-color: var(--spectrum-border-hover);
   color: white;
 }
+
+.popup footer {
+  font-size: 12px;
+  color: #666;
+}
