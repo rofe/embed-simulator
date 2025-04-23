@@ -1,6 +1,10 @@
 # AEM Embed Simulator (experimental)
 Embeds AEM fragments into a page.
 
+## Installation
+
+You can install this extension from the [Chrome Web Store](https://chromewebstore.google.com/detail/aem-embed-simulator/fjofhmphcnlkfmooihhdeoanoomohiih).
+
 ## Local installation
 
 1. Clone this repository to your disk: `git clone https://github.com/rofe/embed-simulator.git`
@@ -15,8 +19,6 @@ Embeds AEM fragments into a page.
    <img width="417" alt="Extension " src="https://github.com/user-attachments/assets/c7ab9d65-619e-4dcd-a9c5-8cc84c907613" />
 1. Click the extension icon in the toolbar and pin the extension:<br />
    <img width="336" alt="Pin extension" src="https://github.com/user-attachments/assets/177b608c-b968-48f2-a003-688ba5ab72b7" />
-
-   
 
 ## Usage
 
